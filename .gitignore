@@ -2,3 +2,10 @@
 .godot/
 /android/
 Export/
+
+# Local tooling
+.codex
+
+# Rust build artifacts (generated locally/CI)
+jviewson-rs/target/
+jviewson-rs/dist/

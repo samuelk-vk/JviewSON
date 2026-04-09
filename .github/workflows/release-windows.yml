@@ -1,0 +1,51 @@
+name: Release Windows Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (for example v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release exe
+        working-directory: jviewson-rs
+        run: cargo build --release --locked
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          Copy-Item "jviewson-rs/target/release/jviewson-rs.exe" "out/jviewson-rs.exe"
+          Compress-Archive -Path "out/jviewson-rs.exe" -DestinationPath "out/jviewson-rs-win64.zip" -Force
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jviewson-rs-win64
+          path: out/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            out/jviewson-rs.exe
+            out/jviewson-rs-win64.zip
